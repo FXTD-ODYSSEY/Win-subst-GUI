@@ -11,11 +11,9 @@ __date__ = '2020-05-12 11:31:30'
 
 import os
 import sys
+import json
+import codecs
 import tempfile
-import subprocess
-
-DIR = os.path.dirname(__file__)
-
 
 # NOTE Python 3 & 2 兼容
 try:
@@ -30,7 +28,7 @@ except:
 
 def takeParm(kwargs,key,default = None):
     res = kwargs.get(key,default)
-    if kwargs.has_key(key):
+    if key in kwargs:
         del kwargs[key]
     return res
 
@@ -99,6 +97,8 @@ class DriveCombobox(tk.Frame):
 
     def get(self):
         return self.combo.get()
+    def current(self,i):
+        return self.combo.current(i)
 
 class LabelSeperator(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -120,6 +120,14 @@ class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
+        parent.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # NOTE 获取系统临时路径
+        temp_dir = tempfile.gettempdir()
+        self.json_file = os.path.join(temp_dir,"subst_TK_GUI.json")
+        # NOTE 获取 startup 目录
+        user_path = os.path.expanduser('~')
+        self.startup_path = os.path.join(user_path, r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
 
         UNC_Frame = tk.Frame()
         gen_frame = tk.LabelFrame(UNC_Frame,text="映射盘符")
@@ -144,7 +152,54 @@ class MainApplication(tk.Frame):
         del_frame.pack(side="top",fill="both", expand=1) 
 
         UNC_Frame.pack(side="top", fill="x", expand=1, padx=5,pady=5)
+
+        self.loadJson()
+    
+    def on_closing(self):
+        self.saveJson()
+        self.parent.destroy()
+
+    def loadJson(self,directory=None):
+        directory = self.json_file if directory is None else directory
+        if not os.path.exists(directory):
+            return
+
+        data = {}
+        try:
+            with open(directory, "r") as f:
+                data = json.load(f,encoding="utf-8")
+        except:
+            import traceback
+            traceback.print_exc()
+            return
+
+        gen_drive = data.get("gen_comboBox")
+        del_drive = data.get("del_comboBox")
+        path = data.get("path")
+
+        for i,val in enumerate(self.gen_comboBox.combo['values']):
+            if val == gen_drive:
+                self.gen_comboBox.current(i)
+                break
+
+        for i,val in enumerate(self.del_comboBox.combo['values']):
+            if val == del_drive:
+                self.del_comboBox.current(i)
+                break
         
+        self.path_widget.edit.delete(0,tk.END)
+        self.path_widget.edit.insert(0,path)
+    
+    def saveJson(self,directory=None):
+        data = {
+            "gen_comboBox" : self.gen_comboBox.get(),
+            "del_comboBox" : self.del_comboBox.get(),
+            "path" : self.path_widget.get(),
+        }
+        directory = self.json_file if directory is None else directory
+        with open(directory, "wb") as f:
+            json.dump(data,f,indent=4)
+
     def generateDriver(self):
         Driver = self.gen_comboBox.get()
         directory = self.path_widget.get()
@@ -163,6 +218,15 @@ class MainApplication(tk.Frame):
         self.gen_comboBox.update()
         self.del_comboBox.update()
 
+        
+        if os.path.exists(self.startup_path):
+            bat_path = os.path.join(self.startup_path, "subst_%s_Driver.bat" % Driver[0])
+            with codecs.open(bat_path, 'w', encoding="utf-8") as f:
+                f.write("subst %s /D\n%s" % (Driver,command))
+
+        self.saveJson()
+
+
     def deleteDriver(self):
         Driver = self.del_comboBox.get()
         val = os.system("subst %s /D" % Driver)
@@ -175,6 +239,11 @@ class MainApplication(tk.Frame):
         self.gen_comboBox.update()
         self.del_comboBox.update()
 
+        bat_path = os.path.join(self.startup_path, "subst_%s_Driver.bat" % Driver[0])
+        if os.path.exists(bat_path):
+            os.remove(bat_path)
+
+        self.saveJson()
 
 if __name__ == "__main__":
     root = tk.Tk()
