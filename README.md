@@ -1,2 +1,2 @@
 # Win-subst-GUI
-windows subst driver PyQt GUI Tool
+windows subst driver with TKinter GUI 
