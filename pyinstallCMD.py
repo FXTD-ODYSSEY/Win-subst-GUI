@@ -4,7 +4,7 @@ import subprocess
 DIR = os.path.dirname(__file__)
 Target = os.path.join(DIR,"UNC2Driver_TK.py") 
 pyinstaller = r"D:\Anaconda3\Scripts\pyinstaller.exe"
-pyinstaller = r"C:\Python27\Scripts\pyinstaller.exe"
+# pyinstaller = r"C:\Python27\Scripts\pyinstaller.exe"
 
 DIR = os.path.dirname(Target)
 spec_path = os.path.join(DIR,"sepc")

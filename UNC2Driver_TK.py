@@ -59,8 +59,9 @@ class SelectPathWidget(tk.Frame):
 
     def selectDirectory(self):
         path = filedialog.askdirectory()
-        self.edit.delete(0, tk.END)
-        self.edit.insert(0, path)
+        if path:
+            self.edit.delete(0, tk.END)
+            self.edit.insert(0, path)
 
     def get(self):
         return self.edit.get()
@@ -120,7 +121,8 @@ class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        parent.protocol("WM_DELETE_WINDOW", self.on_closing)
+        parent.title("盘符映射工具")
+        parent.protocol("WM_DELETE_WINDOW", self.onClosing)
 
         # NOTE 获取系统临时路径
         temp_dir = tempfile.gettempdir()
@@ -128,6 +130,16 @@ class MainApplication(tk.Frame):
         # NOTE 获取 startup 目录
         user_path = os.path.expanduser('~')
         self.startup_path = os.path.join(user_path, r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
+
+        
+        # NOTE 生成菜单 
+        menubar = tk.Menu(self)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="使用说明", command=self.helpWin)
+        filemenu.add_separator()
+        filemenu.add_command(label="退出", command=self.onClosing)
+        menubar.add_cascade(label="帮助", menu=filemenu)
+        parent.config(menu=menubar)
 
         UNC_Frame = tk.Frame()
         gen_frame = tk.LabelFrame(UNC_Frame,text="映射盘符")
@@ -155,7 +167,14 @@ class MainApplication(tk.Frame):
 
         self.loadJson()
     
-    def on_closing(self):
+    def helpWin(self):
+        help_win = tk.Toplevel(self.parent)
+        help_win.title("使用说明")
+        tk.Label(help_win, text="选择可映射盘符进行映射").pack(side="top", fill="x", expand=1, padx=5,pady=5)
+        tk.Label(help_win, text="如果盘符已经存在需要先删除已有盘符再映射").pack(side="top", fill="x", expand=1, padx=5,pady=5)
+        tk.Label(help_win, text="删除盘符为系统分区会提示执行出错，不用担心错误删除系统分区").pack(side="top", fill="x", expand=1, padx=5,pady=5)
+
+    def onClosing(self):
         self.saveJson()
         self.parent.destroy()
 
@@ -197,7 +216,7 @@ class MainApplication(tk.Frame):
             "path" : self.path_widget.get(),
         }
         directory = self.json_file if directory is None else directory
-        with open(directory, "wb") as f:
+        with open(directory, "w") as f:
             json.dump(data,f,indent=4)
 
     def generateDriver(self):
@@ -247,6 +266,5 @@ class MainApplication(tk.Frame):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.winfo_toplevel().title("盘符映射工具")
     MainApplication(root).pack(side="top", expand=True)
     root.mainloop()
