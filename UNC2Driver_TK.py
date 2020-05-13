@@ -168,11 +168,14 @@ class MainApplication(tk.Frame):
         self.loadJson()
     
     def helpWin(self):
-        help_win = tk.Toplevel(self.parent)
-        help_win.title("使用说明")
-        tk.Label(help_win, text="选择可映射盘符进行映射").pack(side="top", fill="x", expand=1, padx=5,pady=5)
-        tk.Label(help_win, text="如果盘符已经存在需要先删除已有盘符再映射").pack(side="top", fill="x", expand=1, padx=5,pady=5)
-        tk.Label(help_win, text="删除盘符为系统分区会提示执行出错，不用担心错误删除系统分区").pack(side="top", fill="x", expand=1, padx=5,pady=5)
+        # NOTE 删除重复的窗口
+        if hasattr(self,"help_win") and self.help_win.winfo_exists():
+            self.help_win.destroy()
+        self.help_win = tk.Toplevel(self.parent)
+        self.help_win.title("使用说明")
+        tk.Label(self.help_win, text="选择可映射盘符进行映射").pack(side="top", fill="x", expand=1, padx=5,pady=5)
+        tk.Label(self.help_win, text="如果盘符已经存在需要先删除已有盘符再映射").pack(side="top", fill="x", expand=1, padx=5,pady=5)
+        tk.Label(self.help_win, text="删除盘符为系统分区会提示执行出错，不用担心错误删除系统分区").pack(side="top", fill="x", expand=1, padx=5,pady=5)
 
     def onClosing(self):
         self.saveJson()
